@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Penjana OPR Rasmi - SK Sungai Kenyah</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- html2pdf.js for Client-Side PDF Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800&display=swap');
+    @import url('https://fonts.cdnfonts.com/css/the-bold-font');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Custom Fonts for OPR Header */
+    .font-the-bold-font {
+      font-family: 'The Bold Font', 'Arial Black', sans-serif;
+    }
+
+    .font-bebas {
+      font-family: 'Bebas Neue', sans-serif;
+      letter-spacing: 0.05em;
+    }
+
+    /* A4 Simulation Styling for Screen Preview */
+    .a4-page {
+      width: 210mm;
+      height: 297mm;
+      position: relative;
+      box-sizing: border-box;
+    }
+
+    /* FORCE BACKGROUND IMAGE ON SCREEN AND PRINT - NO BACKGROUND COLORS */
+    #print-area {
+      background-image: url('https://g-77575625-ctrl.github.io/background/') !important;
+      background-size: cover !important;
+      background-position: center !important;
+      background-repeat: no-repeat !important;
+    }
+
+    /* Print media customization to ensure background image prints beautifully */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #print-area, #print-area * {
+        visibility: visible;
+      }
+      #print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 210mm;
+        height: 297mm;
+        margin: 0 !important;
+        padding: 0.5in !important; /* Narrow margin */
+        box-shadow: none !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+
+    /* Custom Scrollbar for editor panel */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col overflow-x-hidden">
+
+  <!-- Header No-Print -->
+  <header class="bg-slate-950 border-b border-slate-800 py-4 px-6 flex justify-between items-center sticky top-0 z-50">
+    <div class="flex items-center gap-3">
+      <div class="bg-amber-500 text-slate-950 p-2 rounded-lg font-bold text-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+        <i class="fa-solid fa-file-invoice"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-lg leading-tight text-white tracking-wide">OPR-GEN</h1>
+        <p class="text-xs text-slate-400">Penjana One Page Report SK Sungai Kenyah</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <button onclick="downloadOPRPDF()" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold px-5 py-2 rounded-lg shadow-lg shadow-amber-500/10 flex items-center gap-2 transition duration-250 cursor-pointer">
+        <i class="fa-solid fa-file-pdf"></i> Muat Turun PDF
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Wrapper -->
+  <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+    
+    <!-- Left Panel: Form Controls (No AI Generator) -->
+    <aside class="w-full lg:w-[450px] bg-slate-950 border-r border-slate-800 flex flex-col max-h-[calc(100vh-73px)] overflow-y-auto">
+      
+      <!-- Customization Form Sections -->
+      <div class="p-5 space-y-6">
+        
+        <!-- Section: Borang Input Maklumat OPR -->
+        <div>
+          <h4 class="text-white font-semibold text-sm mb-3 flex items-center gap-2 border-b border-slate-800 pb-2">
+            <i class="fa-solid fa-list-check text-amber-400"></i> Borang Kandungan OPR
+          </h4>
+          
+          <div class="space-y-3.5">
+            <!-- 1. Program -->
+            <div>
+              <label class="block text-xs text-slate-400 mb-1 font-medium">1. Nama Program</label>
+              <textarea id="input-program" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 min-h-[45px] resize-y" oninput="updatePreview('opr-program', this.value)">KEJOHANAN SUKAN TAHUNAN SK SUNGAI KENYAH KALI KE-25</textarea>
+            </div>
+
+            <!-- 2. Tarikh / Masa -->
+            <div>
+              <label class="block text-xs text-slate-400 mb-1 font-medium">2. Tarikh / Masa</label>
+              <input type="text" id="input-tarikh-masa" value="15 JULAI 2026 (SABTU) | 8:00 PAGI - 12:30 TENGAH HARI" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500" oninput="updatePreview('opr-tarikh-masa', this.value)">
+            </div>
+
+            <!-- 3. Tempat -->
+            <div>
+              <label class="block text-xs text-slate-400 mb-1 font-medium">3. Tempat</label>
+              <input type="text" id="input-tempat" value="PADANG SEKOLAH, SK SUNGAI KENYAH" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500" oninput="updatePreview('opr-tempat', this.value)">
+            </div>
+
+            <!-- 4. Penganjur -->
+            <div>
+              <label class="block text-xs text-slate-400 mb-1 font-medium">4. Penganjur</label>
+              <input type="text" id="input-penganjur" value="UNIT KOKURIKULUM DENGAN KERJASAMA PIBG" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500" oninput="updatePreview('opr-penganjur', this.value)">
+            </div>
+
+            <!-- 5. Kumpulan Sasaran -->
+            <div>
+              <label class="block text-xs text-slate-400 mb-1 font-medium">5. Kumpulan Sasaran</label>
+              <input type="text" id="input-sasaran" value="SEMUA MURID, GURU, DAN IBU BAPA SK SUNGAI KENYAH" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500" oninput="updatePreview('opr-sasaran', this.value)">
+            </div>
+
+            <!-- 6. Objektif -->
+            <div>
+              <label class="block text-xs text-slate-400 mb-1 font-medium">6. Objektif (Gunakan baris baru untuk setiap poin)</label>
+              <textarea id="input-objektif" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 min-h-[80px]" oninput="updatePreview('opr-objektif', this.value)">1. Memupuk semangat kesukanan dan perpaduan dalam kalangan murid-mudid.
+2. Melahirkan bakat baru murid yang berpotensi dalam bidang olahraga ke peringkat zon dan daerah.
+3. Mengeratkan hubungan silaturahim antara guru, kakitangan sekolah, murid dan ibu bapa.</textarea>
+            </div>
+
+            <!-- 7. Rumusan -->
+            <div>
+              <label class="block text-xs text-slate-400 mb-1 font-medium">7. Rumusan</label>
+              <textarea id="input-rumusan" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 min-h-[100px]" oninput="updatePreview('opr-rumusan', this.value)">Program telah berjalan dengan lancar dan meriah mengikut jadual yang telah ditetapkan. Kehadiran ibu bapa amat menggalakkan serta memberikan sokongan penuh kepada anak-anak. Acara penutup dimeriahkan dengan penyampaian hadiah kepada Rumah Sukan Hijau yang dinobatkan sebagai Johan Keseluruhan. Penambahbaikan masa hadapan termasuk menyediakan khemah tambahan untuk para pengunjung.</textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Pengurusan Gambar Aktiviti -->
+        <div>
+          <h4 class="text-white font-semibold text-sm mb-3 flex items-center gap-2 border-b border-slate-800 pb-2">
+            <i class="fa-solid fa-images text-amber-400"></i> Gambar Aktiviti (4 Keping)
+          </h4>
+          
+          <div class="space-y-3">
+            <!-- Image 1 -->
+            <div class="bg-slate-900 p-2.5 rounded border border-slate-800">
+              <span class="text-[11px] font-semibold text-slate-300 block mb-1">Gambar 1</span>
+              <div class="flex gap-2">
+                <input type="text" id="img-url-1" placeholder="Masukkan URL Gambar" value="https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=600" class="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-amber-500" onchange="updatePhotoSlot(1, this.value)">
+                <label class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs cursor-pointer flex items-center justify-center text-slate-300">
+                  <i class="fa-solid fa-upload"></i>
+                  <input type="file" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, 1)">
+                </label>
+              </div>
+            </div>
+
+            <!-- Image 2 -->
+            <div class="bg-slate-900 p-2.5 rounded border border-slate-800">
+              <span class="text-[11px] font-semibold text-slate-300 block mb-1">Gambar 2</span>
+              <div class="flex gap-2">
+                <input type="text" id="img-url-2" placeholder="Masukkan URL Gambar" value="https://images.unsplash.com/photo-1511556532299-8f662fc26c06?auto=format&fit=crop&q=80&w=600" class="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-amber-500" onchange="updatePhotoSlot(2, this.value)">
+                <label class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs cursor-pointer flex items-center justify-center text-slate-300">
+                  <i class="fa-solid fa-upload"></i>
+                  <input type="file" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, 2)">
+                </label>
+              </div>
+            </div>
+
+            <!-- Image 3 -->
+            <div class="bg-slate-900 p-2.5 rounded border border-slate-800">
+              <span class="text-[11px] font-semibold text-slate-300 block mb-1">Gambar 3</span>
+              <div class="flex gap-2">
+                <input type="text" id="img-url-3" placeholder="Masukkan URL Gambar" value="https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=600" class="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-amber-500" onchange="updatePhotoSlot(3, this.value)">
+                <label class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs cursor-pointer flex items-center justify-center text-slate-300">
+                  <i class="fa-solid fa-upload"></i>
+                  <input type="file" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, 3)">
+                </label>
+              </div>
+            </div>
+
+            <!-- Image 4 -->
+            <div class="bg-slate-900 p-2.5 rounded border border-slate-800">
+              <span class="text-[11px] font-semibold text-slate-300 block mb-1">Gambar 4</span>
+              <div class="flex gap-2">
+                <input type="text" id="img-url-4" placeholder="Masukkan URL Gambar" value="https://images.unsplash.com/photo-1544698310-74ea9d1c8258?auto=format&fit=crop&q=80&w=600" class="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-amber-500" onchange="updatePhotoSlot(4, this.value)">
+                <label class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded text-xs cursor-pointer flex items-center justify-center text-slate-300">
+                  <i class="fa-solid fa-upload"></i>
+                  <input type="file" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, 4)">
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Penandatangan OPR -->
+        <div>
+          <h4 class="text-white font-semibold text-sm mb-3 flex items-center gap-2 border-b border-slate-800 pb-2">
+            <i class="fa-solid fa-file-signature text-amber-400"></i> Pengesahan Pegawai
+          </h4>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Disediakan Oleh (Nama)</label>
+              <input type="text" id="input-nama-penyedia" value="CIKGU ZULKIFLI BIN AHMAD" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500" oninput="updateSignature('penyedia-nama', this.value)">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Disediakan Oleh (Jawatan)</label>
+              <input type="text" id="input-jawatan-penyedia" value="Setiausaha Sukan SK Sungai Kenyah" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500" oninput="updateSignature('penyedia-jawatan', this.value)">
+            </div>
+            <div class="pt-2 border-t border-slate-800">
+              <label class="block text-xs text-slate-400 mb-1">Disahkan Oleh (Nama)</label>
+              <input type="text" id="input-nama-pengesah" value="PUAN SARAH BINTI ABDULLAH" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500" oninput="updateSignature('pengesah-nama', this.value)">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Disahkan Oleh (Jawatan)</label>
+              <input type="text" id="input-jawatan-pengesah" value="Guru Besar SK Sungai Kenyah" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500" oninput="updateSignature('pengesah-jawatan', this.value)">
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- Right Panel: Real-time Live A4 Preview Canvas -->
+    <main class="flex-1 bg-slate-800 p-4 md:p-8 flex items-start justify-center overflow-auto max-h-[calc(100vh-73px)] relative">
+      
+      <!-- Simulated A4 Paper (Narrow margins: 0.5in with pristine BACKGROUND.jpg fully visible) -->
+      <div id="print-area" class="a4-page shadow-2xl rounded text-slate-900 overflow-hidden flex flex-col justify-between p-[0.5in] transition-all duration-350">
+        
+        <!-- OPR Top Header (Clean Transparent Background) -->
+        <header class="relative flex items-center gap-4 border-b-2 border-slate-800 pb-3 mb-4 p-3">
+          <!-- Left Logo -->
+          <div class="relative z-10 w-16 h-16 flex-shrink-0 flex items-center justify-center bg-white/95 rounded p-1 border-2 border-amber-400 shadow">
+            <img id="logo-preview" src="LOGO SKSK.png" alt="Logo Sekolah" class="max-w-full max-h-full object-contain">
+          </div>
+          <!-- Left Aligned Title and School on Transparent Header -->
+          <div class="relative z-10 flex-1 text-left">
+            <h2 id="opr-main-title" class="text-5xl text-white uppercase leading-none font-the-bold-font tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">ONE PAGE REPORT (OPR)</h2>
+            <p id="opr-school-title" class="text-[17px] text-amber-300 uppercase mt-1.5 font-bebas tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">SEKOLAH KEBANGSAAN SUNGAI KENYAH</p>
+          </div>
+        </header>
+
+        <!-- Information Fields - 2 Column Layout strictly formatted to fit 1 page -->
+        <div class="grid grid-cols-12 gap-4 flex-1 items-stretch mb-4">
+          
+          <!-- Column Left (Basic Details: Program, Tarikh, Tempat, Penganjur, Sasaran) -->
+          <div class="col-span-6 flex flex-col justify-between gap-2.5">
+            <!-- 1. Program -->
+            <div class="bg-white/80 p-2.5 rounded border border-slate-200/80 shadow-sm flex-1 flex flex-col justify-center">
+              <span class="text-[10px] font-bold text-amber-700 tracking-wider uppercase mb-0.5"><i class="fa-solid fa-layer-group text-[9px] mr-1"></i>1. PROGRAM</span>
+              <div id="opr-program" class="text-xs font-semibold text-slate-800 leading-tight">KEJOHANAN SUKAN TAHUNAN SK SUNGAI KENYAH KALI KE-25</div>
+            </div>
+
+            <!-- 2. Tarikh / Masa -->
+            <div class="bg-white/80 p-2.5 rounded border border-slate-200/80 shadow-sm flex-1 flex flex-col justify-center">
+              <span class="text-[10px] font-bold text-amber-700 tracking-wider uppercase mb-0.5"><i class="fa-regular fa-calendar-days text-[9px] mr-1"></i>2. TARIKH / MASA</span>
+              <div id="opr-tarikh-masa" class="text-xs font-semibold text-slate-800 leading-tight">15 JULAI 2026 (SABTU) | 8:00 PAGI - 12:30 TENGAH HARI</div>
+            </div>
+
+            <!-- 3. Tempat -->
+            <div class="bg-white/80 p-2.5 rounded border border-slate-200/80 shadow-sm flex-1 flex flex-col justify-center">
+              <span class="text-[10px] font-bold text-amber-700 tracking-wider uppercase mb-0.5"><i class="fa-solid fa-map-pin text-[9px] mr-1"></i>3. TEMPAT</span>
+              <div id="opr-tempat" class="text-xs font-semibold text-slate-800 leading-tight">PADANG SEKOLAH, SK SUNGAI KENYAH</div>
+            </div>
+
+            <!-- 4. Penganjur -->
+            <div class="bg-white/80 p-2.5 rounded border border-slate-200/80 shadow-sm flex-1 flex flex-col justify-center">
+              <span class="text-[10px] font-bold text-amber-700 tracking-wider uppercase mb-0.5"><i class="fa-solid fa-user-tie text-[9px] mr-1"></i>4. PENGANJUR</span>
+              <div id="opr-penganjur" class="text-xs font-semibold text-slate-800 leading-tight">UNIT KOKURIKULUM DENGAN KERJASAMA PIBG</div>
+            </div>
+
+            <!-- 5. Kumpulan Sasaran -->
+            <div class="bg-white/80 p-2.5 rounded border border-slate-200/80 shadow-sm flex-1 flex flex-col justify-center">
+              <span class="text-[10px] font-bold text-amber-700 tracking-wider uppercase mb-0.5"><i class="fa-solid fa-users text-[9px] mr-1"></i>5. KUMPULAN SASARAN</span>
+              <div id="opr-sasaran" class="text-xs font-semibold text-slate-800 leading-tight">SEMUA MURID, GURU, DAN IBU BAPA SK SUNGAI KENYAH</div>
+            </div>
+          </div>
+
+          <!-- Column Right (Longer Details: Objektif, Rumusan) -->
+          <div class="col-span-6 flex flex-col justify-between gap-2.5">
+            <!-- 6. Objektif -->
+            <div class="bg-white/80 p-3 rounded border border-slate-200/80 shadow-sm flex-1 flex flex-col">
+              <span class="text-[10px] font-bold text-amber-700 tracking-wider uppercase mb-1"><i class="fa-solid fa-bullseye text-[9px] mr-1"></i>6. OBJEKTIF</span>
+              <div id="opr-objektif" class="text-xs font-normal text-slate-700 whitespace-pre-line leading-relaxed">1. Memupuk semangat kesukanan dan perpaduan dalam kalangan murid-mudid.
+2. Melahirkan bakat baru murid yang berpotensi dalam bidang olahraga ke peringkat zon dan daerah.
+3. Mengeratkan hubungan silaturahim antara guru, kakitangan sekolah, murid dan ibu bapa.</div>
+            </div>
+
+            <!-- 7. Rumusan -->
+            <div class="bg-white/80 p-3 rounded border border-slate-200/80 shadow-sm flex-1 flex flex-col">
+              <span class="text-[10px] font-bold text-amber-700 tracking-wider uppercase mb-1"><i class="fa-solid fa-chart-line text-[9px] mr-1"></i>7. RUMUSAN</span>
+              <div id="opr-rumusan" class="text-xs font-normal text-slate-700 whitespace-pre-line leading-relaxed">Program telah berjalan dengan lancar dan meriah mengikut jadual yang telah ditetapkan. Kehadiran ibu bapa amat menggalakkan serta memberikan sokongan penuh kepada anak-anak. Acara penutup dimeriahkan dengan penyampaian hadiah kepada Rumah Sukan Hijau yang dinobatkan sebagai Johan Keseluruhan. Penambahbaikan masa hadapan termasuk menyediakan khemah tambahan untuk para pengunjung.</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Section: Large Images Grid spanning margin-to-margin -->
+        <div class="mb-5 relative">
+          <!-- Small Title indicator placed nicely -->
+          <div class="mb-1.5 px-0 flex items-center justify-between">
+            <span class="text-[10px] font-bold text-white tracking-wider uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"><i class="fa-regular fa-images text-[9px] mr-1"></i>GAMBAR AKTIVITI (4 KEPING)</span>
+            <span class="text-[9px] text-amber-300 font-semibold italic drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">Paparan Penuh Margin</span>
+          </div>
+          
+          <!-- Outer Gold Frame Wrapper with Negative Margin to stretch edge-to-edge horizontally -->
+          <div class="-mx-[0.5in] border-y-[4px] border-x-0 sm:border-x-[4px] border-[#D4AF37] shadow-lg overflow-hidden bg-slate-900">
+            <!-- Grid of 4 images with strictly NO gap, and high aspect/height ratio -->
+            <div class="grid grid-cols-4 gap-0">
+              
+              <!-- Slot 1 -->
+              <div class="h-[140px] relative overflow-hidden bg-slate-200 border-r border-slate-300">
+                <img id="img-slot-1" src="https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=600" alt="Aktiviti 1" class="w-full h-full object-cover">
+                <div class="absolute bottom-0 inset-x-0 bg-black/60 text-[9px] text-white py-0.5 text-center truncate">Gambar 1</div>
+              </div>
+
+              <!-- Slot 2 -->
+              <div class="h-[140px] relative overflow-hidden bg-slate-200 border-r border-slate-300">
+                <img id="img-slot-2" src="https://images.unsplash.com/photo-1511556532299-8f662fc26c06?auto=format&fit=crop&q=80&w=600" alt="Aktiviti 2" class="w-full h-full object-cover">
+                <div class="absolute bottom-0 inset-x-0 bg-black/60 text-[9px] text-white py-0.5 text-center truncate">Gambar 2</div>
+              </div>
+
+              <!-- Slot 3 -->
+              <div class="h-[140px] relative overflow-hidden bg-slate-200 border-r border-slate-300">
+                <img id="img-slot-3" src="https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=600" alt="Aktiviti 3" class="w-full h-full object-cover">
+                <div class="absolute bottom-0 inset-x-0 bg-black/60 text-[9px] text-white py-0.5 text-center truncate">Gambar 3</div>
+              </div>
+
+              <!-- Slot 4 -->
+              <div class="h-[140px] relative overflow-hidden bg-slate-200">
+                <img id="img-slot-4" src="https://images.unsplash.com/photo-1544698310-74ea9d1c8258?auto=format&fit=crop&q=80&w=600" alt="Aktiviti 4" class="w-full h-full object-cover">
+                <div class="absolute bottom-0 inset-x-0 bg-black/60 text-[9px] text-white py-0.5 text-center truncate">Gambar 4</div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Signatures in a single horizontal line -->
+        <footer class="grid grid-cols-2 gap-8 border-t border-slate-800 pt-3">
+          
+          <!-- Prepared by (Left) -->
+          <div class="text-left flex flex-col justify-between h-20">
+            <div>
+              <span class="text-[10px] font-bold text-amber-950 uppercase tracking-wider block bg-amber-400/80 px-1.5 py-0.5 rounded w-max">Disediakan Oleh:</span>
+            </div>
+            <div class="mt-4">
+              <span id="sig-penyedia-nama" class="block text-xs font-bold text-slate-900 uppercase tracking-wide">CIKGU ZULKIFLI BIN AHMAD</span>
+              <span id="sig-penyedia-jawatan" class="block text-[10px] text-slate-800 font-semibold">Setiausaha Sukan SK Sungai Kenyah</span>
+            </div>
+          </div>
+
+          <!-- Verified by (Right) -->
+          <div class="text-left flex flex-col justify-between h-20 pl-8 border-l border-slate-400">
+            <div>
+              <span class="text-[10px] font-bold text-amber-950 uppercase tracking-wider block bg-amber-400/80 px-1.5 py-0.5 rounded w-max">Disahkan Oleh:</span>
+            </div>
+            <div class="mt-4">
+              <span id="sig-pengesah-nama" class="block text-xs font-bold text-slate-900 uppercase tracking-wide">PUAN SARAH BINTI ABDULLAH</span>
+              <span id="sig-pengesah-jawatan" class="block text-[10px] text-slate-800 font-semibold">Guru Besar SK Sungai Kenyah</span>
+            </div>
+          </div>
+
+        </footer>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Core Logic Script -->
+  <script>
+    // Real-time synchronization from Sidebar Input to A4 Preview
+    function updatePreview(elementId, val) {
+      const element = document.getElementById(elementId);
+      if (element) {
+        element.textContent = val;
+      }
+    }
+
+    // Direct Photo Update
+    function updatePhotoSlot(index, url) {
+      const img = document.getElementById(`img-slot-${index}`);
+      if (img && url) {
+        img.src = url;
+        document.getElementById(`img-url-${index}`).value = url;
+      }
+    }
+
+    function handlePhotoUpload(e, index) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          updatePhotoSlot(index, evt.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function updateSignature(targetId, val) {
+      const target = document.getElementById(`sig-${targetId}`);
+      if (target) {
+        target.textContent = val;
+      }
+    }
+
+    // High Quality PDF Download with html2pdf.js
+    function downloadOPRPDF() {
+      const element = document.getElementById('print-area');
+      const programName = document.getElementById('input-program').value || 'OPR';
+      const cleanFileName = programName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+
+      alertCustom("Sedang menyediakan fail PDF anda...", "info");
+
+      const opt = {
+        margin:       0,
+        filename:     `OPR_${cleanFileName}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { 
+          scale: 2.5, 
+          useCORS: true,
+          logging: false
+        },
+        jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+      };
+
+      // Generate PDF
+      html2pdf().set(opt).from(element).save()
+        .then(() => {
+          alertCustom("PDF berjaya dimuat turun!", "success");
+        })
+        .catch(err => {
+          alertCustom("Ralat semasa menjana PDF. Sila cuba lagi.", "error");
+        });
+    }
+
+    function alertCustom(message, type = "info") {
+      const alertBox = document.createElement('div');
+      alertBox.className = `fixed bottom-4 right-4 z-50 px-6 py-3 rounded-lg shadow-xl text-sm font-semibold transition-transform duration-300 transform translate-y-10 opacity-0 flex items-center gap-2 ${
+        type === "success" ? "bg-emerald-500 text-white" : type === "error" ? "bg-rose-500 text-white" : "bg-slate-700 text-slate-100"
+      }`;
+      
+      const icon = document.createElement('i');
+      icon.className = type === "success" ? "fa-solid fa-circle-check" : type === "error" ? "fa-solid fa-circle-exclamation" : "fa-solid fa-circle-info";
+      
+      alertBox.appendChild(icon);
+      alertBox.appendChild(document.createTextNode(message));
+      document.body.appendChild(alertBox);
+
+      // Trigger transition
+      setTimeout(() => {
+        alertBox.classList.remove('translate-y-10', 'opacity-0');
+      }, 50);
+
+      // Hide and destroy
+      setTimeout(() => {
+        alertBox.classList.add('translate-y-10', 'opacity-0');
+        setTimeout(() => alertBox.remove(), 300);
+      }, 3500);
+    }
+  </script>
+</body>
+</html>
